@@ -1,0 +1,54 @@
+/* ============================================================
+   Project: Transaction Monitoring Alert Quality Analytics
+   Domain: AML / Financial Crime Compliance
+   ============================================================ */
+
+-- 1. Alert Volume vs True-Positive Proxy
+SELECT
+    rule_id,
+    COUNT(*) AS alert_cnt,
+    ROUND(
+        100.0 * AVG(CASE WHEN disposition IN ('CASE','SAR') THEN 1 ELSE 0 END),
+        2
+    ) AS tp_proxy_pct
+FROM alerts
+GROUP BY rule_id
+ORDER BY alert_cnt DESC;
+
+-- 2. Investigator SLA & Backlog Trends
+SELECT
+    DATE_TRUNC('week', alert_time) AS week_start,
+    COUNT(*) AS alerts_closed,
+    ROUND(AVG(time_to_close_hrs), 2) AS avg_time_to_close_hrs,
+    ROUND(
+        100.0 * AVG(CASE WHEN sla_breached = 1 THEN 1 ELSE 0 END),
+        2
+    ) AS sla_breach_pct
+FROM alerts_closed
+GROUP BY week_start
+ORDER BY week_start;
+
+-- 3. False-Positive Reduction Lens
+SELECT
+    rule_id,
+    COUNT(*) AS alert_cnt,
+    ROUND(
+        100.0 * AVG(CASE WHEN disposition = 'FP' THEN 1 ELSE 0 END),
+        2
+    ) AS fp_pct
+FROM alerts
+GROUP BY rule_id
+ORDER BY fp_pct DESC;
+
+-- 4. Operational Efficiency vs Compliance Risk
+SELECT
+    rule_id,
+    COUNT(*) AS alert_cnt,
+    ROUND(
+        100.0 * AVG(CASE WHEN disposition IN ('CASE','SAR') THEN 1 ELSE 0 END),
+        2
+    ) AS tp_proxy_pct
+FROM alerts
+GROUP BY rule_id
+HAVING COUNT(*) > 100
+ORDER BY tp_proxy_pct ASC;
